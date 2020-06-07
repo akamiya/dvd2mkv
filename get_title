@@ -1,0 +1,49 @@
+#!/usr/bin/php
+<?php 
+$optind = null;
+$options = getopt("aj", array("--all", "--japanese"), $optind);
+$title = implode(" ", array_slice($argv, $optind));
+
+$apikey = "30ab6e1361437bda0a8a29d8c887b36e"; //TMDbのAPIキー
+
+$query = urlencode($title);
+
+$lang = "";
+if (isset($options["j"])) {
+    $lang = "&language=jp-JA";
+}
+
+$url = "https://api.themoviedb.org/3/";
+$url .= "search/movie?";
+$url .= "api_key=$apikey";
+$url .= "&query=$query";
+$url .= "&page=1";
+$url .= "&include_adult=true";
+$url .= $lang;
+echo $url."\n";
+
+$url_Contents = file_get_contents($url);
+$movieArray = json_decode($url_Contents, true);
+
+if (!isset($options["a"])) {
+    if (count($movieArray["results"]) > 1) {
+        exit();
+    }
+}
+
+foreach ($movieArray["results"] as $movie) {
+    $release_year = substr($movie['release_date'], 0, 4);
+
+    // strip invalid chars per https://stackoverflow.com/questions/2021624/string-sanitizer-for-filename
+    $file_name = mb_ereg_replace("([^\w\s\d\-_,;\[\]\(\).])", '', $movie["title"]);
+    $file_name = mb_ereg_replace("([\.]{2,})", '', $file_name);
+
+    if (!isset($options["a"])) {
+        echo "$file_name ($release_year)\n";
+    }
+    else {
+        echo "$file_name\n";
+    }
+}
+
+?>
