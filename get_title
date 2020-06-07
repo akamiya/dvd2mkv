@@ -1,11 +1,24 @@
 #!/usr/bin/php
 <?php 
+# script based on https://chariosan.com/2019/03/10/php_movie_search_api/
+
 $optind = null;
 $options = getopt("aj", array("--all", "--japanese"), $optind);
 $title = implode(" ", array_slice($argv, $optind));
 
-$apikey = "30ab6e1361437bda0a8a29d8c887b36e"; //TMDbのAPIキー
+# get script path per https://stackoverflow.com/questions/4645082/get-absolute-path-of-initially-run-script
+list($scriptPath) = get_included_files();
 
+# read in api key
+$apikey_path = dirname($scriptPath)."/.api_key";
+if (!file_exists($apikey_path)) {
+    echo ".api_key not found\n";
+    exit();
+}
+
+$apikey = trim(file_get_contents($apikey_path)); //TMDbのAPIキー
+
+# build query
 $query = urlencode($title);
 
 $lang = "";
@@ -21,9 +34,11 @@ $url .= "&page=1";
 $url .= "&include_adult=true";
 $url .= $lang;
 
+# get API results
 $url_Contents = file_get_contents($url);
 $movieArray = json_decode($url_Contents, true);
 
+# check whether we return all results
 if (!isset($options["a"])) {
     if (count($movieArray["results"]) > 1) {
         exit();
