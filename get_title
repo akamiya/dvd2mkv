@@ -20,7 +20,6 @@ $url .= "&query=$query";
 $url .= "&page=1";
 $url .= "&include_adult=true";
 $url .= $lang;
-echo $url."\n";
 
 $url_Contents = file_get_contents($url);
 $movieArray = json_decode($url_Contents, true);

@@ -4,12 +4,13 @@ title=""
 audio_track=""
 subtitle_track=""
 eject=""
+noeject=""
 notice=""
 info=""
 translate_japanese=""
 convert=""
 
-while getopts icet:a:s:j opt
+while getopts nicet:a:s:j opt
 do
     case $opt in 
     i)
@@ -19,11 +20,14 @@ do
     c)
         convert="1"
         echo "convert selected."
-        ;;
- 
+        ;; 
     e)
         eject="1"
         echo "eject selected."
+        ;;
+    n)
+        noeject="1"
+        echo "noeject selected."
         ;;
     a)
         audio_track="$OPTARG"
@@ -48,15 +52,18 @@ shift $((OPTIND - 1))
 
 # translate title if requested
 if [ ! -z "$translate_japanese" -a ! -z "$title" ]; then
-    jtitle=$(./get_title $title)
+    english_title=$(./get_title $title)
 
-    if [ -z "$jtitle" ]; then
-        echo "Title is ambiguous"
+    if [ -z "$english_title" ]; then
+        echo "Title is ambiguous. Please choose from below:"
+        ./get_title -a -j $title
         exit
     fi
 
-    title=$jtitle
+    title=$english_title
 fi
+
+echo Title is $title
 
 # determine source and destination
 src=""
@@ -96,15 +103,15 @@ if [ ! -z "$src" -a ! -z "$title" -a "$convert" == "1" ]; then
 
     cmd="-o \"$dest\"  --main-feature  --preset \"Fast 1080p30\" $flags"
     mkdir -p "$destdir" 
-    eject="1"
+    if [ -z "$noeject" ]; then
+        eject="1"
+    fi
 fi
 
 if [ -z "$cmd" -a "$info" == "1" ]; then
     cmd=" --scan"
     notice="1"
 fi
-
-echo $eject
 
 if [ -z "$cmd" -a "$eject" != "1" ]; then
     notice="1"
