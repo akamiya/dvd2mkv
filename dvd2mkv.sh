@@ -1,5 +1,10 @@
 #!/bin/sh
 
+if [ -f ~/.dvd2mkvrc ]; then
+    source ~/.dvd2mkvrc
+    echo $line_notify_token
+fi
+
 title=""
 audio_track=""
 subtitle_track=""
@@ -9,10 +14,16 @@ notice=""
 info=""
 translate_japanese=""
 convert=""
+episode=""
+tv=0
 
-while getopts nicet:a:s:j opt
+while getopts vnicet:a:s:p:j opt
 do
     case $opt in 
+    v)
+        tv=1
+        echo "for tv"
+        ;;
     i)
         info="1"
         echo "info selected."
@@ -45,6 +56,10 @@ do
         translate_japanese="1"
         echo "translate_japanese selected."
         ;;
+    p)
+        episode="$OPTARG"
+        echo "episode=$OPTARG"
+        ;; 
     esac
 done
 
@@ -70,7 +85,11 @@ src=""
 destdir=""
 if [ ! -z "$title" ]; then
     # determine source
-    destdir="/Volumes/LHD-ENU3W/Videos/$title"
+    folder="Videos"
+    if [ $tv -eq 1 ]; then
+        folder="TV"
+    fi
+    destdir="/Volumes/LHD-ENU3W/$folder/$title"
     if [ -e "$destdir/$title.iso" ]; then
         src="$destdir/$title.iso"
     fi
@@ -90,7 +109,13 @@ fi
 cmd=""
 
 if [ ! -z "$src" -a ! -z "$title" -a "$convert" == "1" ]; then
-    dest="$destdir/$title.mkv"
+    # add episode info if specified
+    filename=$title
+    if [ ! -z $episode ] ; then
+        filename="$title $episode"
+    fi
+
+    dest="$destdir/$filename.mkv"
     flags=""
 
     if [ ! -z "$subtitle_track" ]; then
@@ -120,7 +145,11 @@ fi
 # execute ops
 if [ ! -z "$cmd" ]; then
     echo "HandbrakeCLI --input \"$src\" $cmd"
-    sudo bash -c "exec HandbrakeCLI --input \"$src\" $cmd"
+    sudo bash -c "exec arch -x86_64 /usr/local/bin/HandbrakeCLI --input \"$src\" $cmd"
+
+    if [ ! -z $line_notify_token ]; then
+        curl -X POST -H "Authorization: Bearer $line_notify_token" -F "message=$title done" https://notify-api.line.me/api/notify
+    fi
 fi
 
 if [ "$eject" == "1" ]; then
